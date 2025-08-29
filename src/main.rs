@@ -1,8 +1,8 @@
+use image::{ExtendedColorType, ImageEncoder, ImageError, codecs::png::PngEncoder};
 use num::Complex;
-use std::str::FromStr;
-use image::{codecs::png::PngEncoder, ExtendedColorType, ImageEncoder, ImageError};
-use std::fs::File;
 use std::env;
+use std::fs::File;
+use std::str::FromStr;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -14,15 +14,13 @@ fn main() {
         std::process::exit(1);
     }
 
-    let bounds: (usize, usize) = parse_pair(&args[2], 'x')
-        .expect("error parsing image dimensions.");
-    let upper_left = parse_complex(&args[3])
-        .expect("error parsing upper left corner point");
-    let lower_right = parse_complex(&args[4])
-        .expect("error parsing lower right corner point");
+    let bounds: (usize, usize) =
+        parse_pair(&args[2], 'x').expect("error parsing image dimensions.");
+    let upper_left = parse_complex(&args[3]).expect("error parsing upper left corner point");
+    let lower_right = parse_complex(&args[4]).expect("error parsing lower right corner point");
 
     let mut pixels = vec![0; bounds.0 * bounds.1];
-    
+
     let threads = std::thread::available_parallelism()
         .expect("error querying CPU count")
         .get();
@@ -35,9 +33,8 @@ fn main() {
             let height = band.len() / bounds.0;
             let band_bounds = (bounds.0, height);
 
-            let band_upper_left = 
-                pixel_to_point(bounds, (0, top), upper_left, lower_right);
-            let band_lower_right = 
+            let band_upper_left = pixel_to_point(bounds, (0, top), upper_left, lower_right);
+            let band_lower_right =
                 pixel_to_point(bounds, (bounds.0, top + height), upper_left, lower_right);
 
             spawner.spawn(move || {
@@ -46,12 +43,11 @@ fn main() {
         }
     });
 
-    write_image(&args[1], &pixels, bounds)
-        .expect("error writing PNG file");
+    write_image(&args[1], &pixels, bounds).expect("error writing PNG file");
 }
 
 /// Render a rectangle of the Mandelbrot set into a buffer of pixels.
-/// 
+///
 /// The `bounds` argument gives the width and height of the buffer `pixels`,
 /// which holds one grayscale pixel per byte. The `upper_left` and `lower_right`
 /// arguments specify points on the complex plane corresponding to the upper-left
@@ -77,17 +73,13 @@ fn render(
 
 /// Write the buffer `pixels`, whose dimensions are given by `bounds`, to the file
 /// named `filename`.
-fn write_image(
-    filename: &str,
-    pixels: &[u8],
-    bounds: (usize, usize),
-) -> Result<(), ImageError> {
+fn write_image(filename: &str, pixels: &[u8], bounds: (usize, usize)) -> Result<(), ImageError> {
     let output = File::create(filename)?;
     let encoder = PngEncoder::new(output);
     encoder.write_image(
-        pixels, 
-        bounds.0 as u32, 
-        bounds.1 as u32, 
+        pixels,
+        bounds.0 as u32,
+        bounds.1 as u32,
         ExtendedColorType::L8,
     )?;
 
@@ -113,34 +105,32 @@ fn escape_time(c: Complex<f64>, limit: usize) -> Option<usize> {
 }
 
 /// Parse the string `s` as a coordinate pair, like `"400x600"` or `"1.0,0.5"`.
-/// 
+///
 /// Specifically, `s` should be of the form <left><sep><right>, where <sep> is
 /// the character given by the `separator` argument, and <left> and <right> are
 /// both strings that can be parsed by `T::from_str`. `separator` must be an
 /// ASCII character.
-/// 
+///
 /// If `s` has the proper form, return `Some<(x, y)>`. If it doesn't parse
 /// correctly, return `None`.
 fn parse_pair<T: FromStr>(s: &str, separator: char) -> Option<(T, T)> {
     match s.find(separator) {
         None => None,
-        Some(index) => {
-            match (T::from_str(&s[..index]), T::from_str(&s[index+1..])) {
-                (Ok(l), Ok(r)) => Some((l, r)),
-                _ => None,
-            }
-        }
+        Some(index) => match (T::from_str(&s[..index]), T::from_str(&s[index + 1..])) {
+            (Ok(l), Ok(r)) => Some((l, r)),
+            _ => None,
+        },
     }
 }
 
 #[test]
 fn test_parse_pair() {
-    assert_eq!(parse_pair::<i32>("",        ','), None);
-    assert_eq!(parse_pair::<i32>("10,",     ','), None);
-    assert_eq!(parse_pair::<i32>(",10",     ','), None);
-    assert_eq!(parse_pair::<i32>("10,20",   ','), Some((10, 20)));
+    assert_eq!(parse_pair::<i32>("", ','), None);
+    assert_eq!(parse_pair::<i32>("10,", ','), None);
+    assert_eq!(parse_pair::<i32>(",10", ','), None);
+    assert_eq!(parse_pair::<i32>("10,20", ','), Some((10, 20)));
     assert_eq!(parse_pair::<i32>("10,20xy", ','), None);
-    assert_eq!(parse_pair::<f64>("0.5x",    'x'), None);
+    assert_eq!(parse_pair::<f64>("0.5x", 'x'), None);
     assert_eq!(parse_pair::<f64>("0.5x1.5", 'x'), Some((0.5, 1.5)));
 }
 
@@ -157,14 +147,17 @@ fn parse_complex(s: &str) -> Option<Complex<f64>> {
 fn test_parse_complex() {
     assert_eq!(
         parse_complex("1.25,-0.0625"),
-        Some(Complex { re: 1.25, im: -0.0625 }),
+        Some(Complex {
+            re: 1.25,
+            im: -0.0625
+        }),
     );
     assert_eq!(parse_complex(",-0.0625"), None);
 }
 
 /// Given the row and column of a pixel in the output image, return the
 /// corresponding point on the complex plane.
-/// 
+///
 /// `bounds` is a pair giving the width and height of the image in pixels.
 /// `pixel` is a (column, row) pair indicating a particular pixel in that image.
 /// The `upper_left` and `lower_right` parameters are points on the
@@ -179,8 +172,8 @@ fn pixel_to_point(
         lower_right.re - upper_left.re,
         upper_left.im - lower_right.im,
     );
-    Complex { 
-        re: upper_left.re + pixel.0 as f64 * width / bounds.0 as f64, 
+    Complex {
+        re: upper_left.re + pixel.0 as f64 * width / bounds.0 as f64,
         im: upper_left.im - pixel.1 as f64 * height / bounds.1 as f64,
     }
 }
@@ -194,6 +187,9 @@ fn test_pixel_to_point() {
             Complex { re: -1.0, im: 1.0 },
             Complex { re: 1.0, im: -1.0 },
         ),
-        Complex { re: -0.5, im: -0.75 },
+        Complex {
+            re: -0.5,
+            im: -0.75
+        },
     );
 }
