@@ -45,7 +45,7 @@ After building, run the program as shown in the usage section. The output image 
 
 Below is a sample output generated:
 
-![Sample Mandelbrot Output](mandel.png)
+![Sample Mandelbrot Output](sample.png)
 
 ## Dependencies
 - [num](https://crates.io/crates/num): Complex number support
