@@ -41,6 +41,12 @@ The executable will be located at `target/release/mandelbrot`.
 
 After building, run the program as shown in the usage section. The output image will be saved to the specified file.
 
+## Showcase
+
+Below is a sample output generated:
+
+![Sample Mandelbrot Output](mandel.png)
+
 ## Dependencies
 - [num](https://crates.io/crates/num): Complex number support
 - [image](https://crates.io/crates/image): PNG encoding
